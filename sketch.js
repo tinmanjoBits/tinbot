@@ -30,8 +30,6 @@ var probMatrix = [
   [0, 0, 0, 0, 0, 0, 0]
 ];
 
-var botXPos = 1;
-var botYPos = 1;
 var botScore = 0;
 var botMoves = 0;
 var lastScore = 0;
@@ -84,7 +82,7 @@ function draw() {
 
 function initSim() {
   env = new Env(envMap);
-  tBot = new Bot(botXPos, botYPos, 10, 9);
+  tBot = new Bot(1, 1, 10, 9);
 }
 
 class Bot {
@@ -186,11 +184,11 @@ class Bot {
 
   calcReward() {
     if (env.envMap[this.ypos][this.xpos] === 22) {
-      this.currentScore -= 0.04;
+      this.currentScore -= 0.02;
       //this.currentScore *= epsilon;
     }
     if (env.envMap[this.ypos][this.xpos] === -1) {
-      this.currentScore -= 0.02;
+      this.currentScore -= 0.01;
       //this.currentScore *= epsilon;
     }
     if (env.envMap[this.ypos][this.xpos] === 0) {
@@ -200,12 +198,15 @@ class Bot {
       this.xpos = 1;
       this.ypos = 1;
     }
-    if (env.envMap[this.ypos][this.xpos] === 100) {
+    if (env.envMap[this.ypos][this.xpos] === 99) {
       this.currentScore = 1;
       //  this.currentScore *= -epsilon;
+      this.xpos = 1;
+      this.ypos = 1;
     }
 
-    console.log(this.currentScore);
+    probMatrix[this.ypos][this.xpos] = sigmoid(this.currentScore);
+    console.log(this.currentScore, sigmoid(this.currentScore));
   }
 
   render() {
@@ -265,13 +266,23 @@ class Env {
   }
 }
 
+function sigmoid(t) {
+  return 1 / (1 + Math.exp(-t));
+}
+
 function drawProbMatrix() {
   stroke(0);
   fill(255);
 
   for (let cols = 0; cols < probMatrix.length; cols++) {
     for (let rows = 0; rows < probMatrix[0].length; rows++) {
-      rect(MAPXOFFSET * 9 + rows * 8, MAPYOFFSET + cols * 8, 8, 8);
+      let k = probMatrix[cols][rows];
+      if (k <= 0) {
+        fill(255 % (k * 128), 0, 0);
+      } else {
+        fill(255 % (k * 256));
+      }
+      rect(MAPXOFFSET * 7 + rows * 16, MAPYOFFSET + cols * 16, 16, 16);
     }
   }
 }
@@ -296,6 +307,10 @@ function keyPressed() {
   if (keyCode === ESCAPE) {
     initSim();
   }
+
+  botScoreLabel.html(
+    "Bot score:" + tBot.currentScore + " <br>Best score:" + tBot.bestScore
+  );
 }
 
 /*
