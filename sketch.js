@@ -13,21 +13,10 @@ var envMap = [
 ];
 
 const WINWIDTH = 640;
-const WINHEIGHT = 480;
+const WINHEIGHT = 320;
 
 const MAPXOFFSET = 64;
 const MAPYOFFSET = 32;
-var botMem = [
-  [0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0]
-];
 
 var probMatrix = [
   [0, 0, 0, 0, 0, 0, 0],
@@ -63,7 +52,7 @@ function setup() {
 
   botScoreLabel = createElement(
     "p",
-    "Bot score:" + botScore + " <br>Best score:" + bestScore
+    "Bot score:" + tBot.currentScore + " <br>Best score:" + tBot.bestScore
   );
   botMoveLabel = createElement(
     "p",
@@ -102,12 +91,23 @@ class Bot {
   constructor(xpos, ypos) {
     this.xpos = xpos;
     this.ypos = ypos;
+    this.currentScore = 1;
+    this.lastScore = 0;
+    this.bestScore = 0;
 
     this.mem = this.resetMemory();
   }
 
   resetMemory() {
-    return botMem;
+    let k = [];
+    for (let i = 0; i < 9; i++) {
+      k[i] = [];
+      for (let j = 0; j < 7; j++) {
+        k[i][j] = 0;
+      }
+    }
+
+    return k;
   }
 
   update() {}
@@ -130,6 +130,8 @@ class Bot {
       } else {
         this.xpos--;
       }
+
+      this.calcReward();
     }
 
     // handle right
@@ -141,6 +143,7 @@ class Bot {
       } else {
         this.xpos++;
       }
+      this.calcReward();
     }
 
     // handle up
@@ -152,6 +155,7 @@ class Bot {
       } else {
         this.ypos--;
       }
+      this.calcReward();
     }
 
     // handle down
@@ -164,11 +168,11 @@ class Bot {
         this.ypos++;
       }
     }
+    this.calcReward();
   }
 
   updateMemory(x, y) {
     if (this.mem !== undefined) {
-      console.log(this.mem);
       this.mem[y][x] = -1;
       /*
       for (let cols = 0; cols < this.mem.length; cols++) {
@@ -180,6 +184,30 @@ class Bot {
     }
   }
 
+  calcReward() {
+    if (env.envMap[this.ypos][this.xpos] === 22) {
+      this.currentScore -= 0.04;
+      //this.currentScore *= epsilon;
+    }
+    if (env.envMap[this.ypos][this.xpos] === -1) {
+      this.currentScore -= 0.02;
+      //this.currentScore *= epsilon;
+    }
+    if (env.envMap[this.ypos][this.xpos] === 0) {
+      this.currentScore = -1;
+      //this.currentScore *= epsilon;
+      ///reset bot position
+      this.xpos = 1;
+      this.ypos = 1;
+    }
+    if (env.envMap[this.ypos][this.xpos] === 100) {
+      this.currentScore = 1;
+      //  this.currentScore *= -epsilon;
+    }
+
+    console.log(this.currentScore);
+  }
+
   render() {
     // draw bot memory
     stroke(0);
@@ -189,10 +217,11 @@ class Bot {
       for (let rows = 0; rows < this.mem[0].length; rows++) {
         if (this.mem[cols][rows] === -1) {
           fill(0);
-          rect(MAPXOFFSET * 5 + rows * 32, MAPYOFFSET + cols * 32, 32, 32);
         } else {
-          rect(MAPXOFFSET * 5 + rows * 32, MAPYOFFSET + cols * 32, 32, 32);
+          fill(255);
         }
+
+        rect(MAPXOFFSET * 5 + rows * 16, MAPYOFFSET + cols * 16, 16, 16);
       }
     }
 
@@ -242,7 +271,7 @@ function drawProbMatrix() {
 
   for (let cols = 0; cols < probMatrix.length; cols++) {
     for (let rows = 0; rows < probMatrix[0].length; rows++) {
-      rect(MAPXOFFSET * 9 + rows * 32, MAPYOFFSET + cols * 32, 32, 32);
+      rect(MAPXOFFSET * 9 + rows * 8, MAPYOFFSET + cols * 8, 8, 8);
     }
   }
 }
