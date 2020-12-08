@@ -53,14 +53,13 @@ var botScoreLabel;
 var botMoveLabel;
 var epsilon = 0.1;
 
-var bot;
+var tBot;
 var env;
 
 function setup() {
   createCanvas(WINWIDTH, WINHEIGHT);
 
-  env = new Env(envMap);
-  // bot = new Bot();
+  initSim();
 
   botScoreLabel = createElement(
     "p",
@@ -87,11 +86,122 @@ function draw() {
   background(255);
 
   env.render();
-  drawBot();
-  drawBotMem();
+  tBot.render();
+
   drawProbMatrix();
 
   fill(0);
+}
+
+function initSim() {
+  env = new Env(envMap);
+  tBot = new Bot(botXPos, botYPos, 10, 9);
+}
+
+class Bot {
+  constructor(xpos, ypos) {
+    this.xpos = xpos;
+    this.ypos = ypos;
+
+    this.mem = this.resetMemory();
+  }
+
+  resetMemory() {
+    return botMem;
+  }
+
+  update() {}
+
+  checkIfHitWall(xpos, ypos) {
+    if (env.envMap[ypos][xpos] === 22) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  handleMovement(x, y) {
+    // handle left
+    if (x === -1 && y === 0) {
+      let hit = this.checkIfHitWall(this.xpos - 1, this.ypos);
+
+      if (hit) {
+        this.updateMemory(this.xpos - 1, this.ypos);
+      } else {
+        this.xpos--;
+      }
+    }
+
+    // handle right
+    if (x === 1 && y === 0) {
+      let hit = this.checkIfHitWall(this.xpos + 1, this.ypos);
+
+      if (hit) {
+        this.updateMemory(this.xpos + 1, this.ypos);
+      } else {
+        this.xpos++;
+      }
+    }
+
+    // handle up
+    if (x === 0 && y === -1) {
+      let hit = this.checkIfHitWall(this.xpos, this.ypos - 1);
+
+      if (hit) {
+        this.updateMemory(this.xpos, this.ypos - 1);
+      } else {
+        this.ypos--;
+      }
+    }
+
+    // handle down
+    if (x === 0 && y === 1) {
+      let hit = this.checkIfHitWall(this.xpos, this.ypos + 1);
+
+      if (hit) {
+        this.updateMemory(this.xpos, this.ypos + 1);
+      } else {
+        this.ypos++;
+      }
+    }
+  }
+
+  updateMemory(x, y) {
+    if (this.mem !== undefined) {
+      console.log(this.mem);
+      this.mem[y][x] = -1;
+      /*
+      for (let cols = 0; cols < this.mem.length; cols++) {
+        for (let rows = 0; rows < this.mem[0].length; rows++) {
+          this.mem[cols][rows] = -1;
+        }
+      }
+      */
+    }
+  }
+
+  render() {
+    // draw bot memory
+    stroke(0);
+    fill(255);
+
+    for (let cols = 0; cols < this.mem.length; cols++) {
+      for (let rows = 0; rows < this.mem[0].length; rows++) {
+        if (this.mem[cols][rows] === -1) {
+          fill(0);
+          rect(MAPXOFFSET * 5 + rows * 32, MAPYOFFSET + cols * 32, 32, 32);
+        } else {
+          rect(MAPXOFFSET * 5 + rows * 32, MAPYOFFSET + cols * 32, 32, 32);
+        }
+      }
+    }
+
+    // draw bot
+    noStroke();
+    fill(0, 0, 255);
+
+    rect(MAPXOFFSET + this.xpos * 32, MAPYOFFSET + this.ypos * 32, 32, 32);
+  }
 }
 
 class Env {
@@ -126,23 +236,6 @@ class Env {
   }
 }
 
-function drawBot() {
-  fill(0, 0, 255);
-
-  rect(MAPXOFFSET + botXPos * 32, MAPYOFFSET + botYPos * 32, 32, 32);
-}
-
-function drawBotMem() {
-  stroke(0);
-  fill(255);
-
-  for (let cols = 0; cols < botMem.length; cols++) {
-    for (let rows = 0; rows < botMem[0].length; rows++) {
-      rect(MAPXOFFSET * 5 + rows * 32, MAPYOFFSET + cols * 32, 32, 32);
-    }
-  }
-}
-
 function drawProbMatrix() {
   stroke(0);
   fill(255);
@@ -156,62 +249,24 @@ function drawProbMatrix() {
 
 function keyPressed() {
   if (keyCode === LEFT_ARROW) {
-    let hit = checkIfHitWall(botXPos - 1, botYPos);
-
-    if (hit) {
-      updateBotMem(botXPos - 1, botYPos);
-    } else {
-      botXPos--;
-    }
+    tBot.handleMovement(-1, 0);
   }
 
   if (keyCode === RIGHT_ARROW) {
-    let hit = checkIfHitWall(botXPos + 1, botYPos);
-
-    if (hit) {
-      updateBotMem(botXPos + 1, botYPos);
-    } else {
-      botXPos++;
-    }
+    tBot.handleMovement(1, 0);
   }
 
   if (keyCode === UP_ARROW) {
-    let hit = checkIfHitWall(botXPos, botYPos - 1);
-
-    if (hit) {
-      updateBotMem(botXPos, botYPos - 1);
-    } else {
-      botYPos--;
-    }
+    tBot.handleMovement(0, -1);
   }
 
   if (keyCode === DOWN_ARROW) {
-    let hit = checkIfHitWall(botXPos, botYPos + 1);
-
-    if (hit) {
-      updateBotMem(botXPos, botYPos + 1);
-    } else {
-      botYPos++;
-    }
-  }
-}
-
-function updateBotMem(x, y) {
-  for (let cols = 0; cols < botMem.length; cols++) {
-    for (let rows = 0; rows < botMem[0].length; rows++) {}
-  }
-}
-
-function checkIfHitWall(botPosX, botPosY) {
-  if (typeof env.envMap !== "undefined") {
-    if (env.envMap[botPosY][botPosX] === 22) {
-      return true;
-    }
-  } else {
-    return false;
+    tBot.handleMovement(0, 1);
   }
 
-  return false;
+  if (keyCode === ESCAPE) {
+    initSim();
+  }
 }
 
 /*
