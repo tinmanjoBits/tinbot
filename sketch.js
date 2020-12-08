@@ -1,6 +1,6 @@
 /* eslint-disable no-undef, no-unused-vars */
 
-var env = [
+var envMap = [
   [22, 22, 22, 22, 22, 22, 22],
   [22, 7, 22, 99, -1, 0, 22],
   [22, -1, 22, 0, -1, -1, 22],
@@ -53,8 +53,15 @@ var botScoreLabel;
 var botMoveLabel;
 var epsilon = 0.1;
 
+var bot;
+var env;
+
 function setup() {
   createCanvas(WINWIDTH, WINHEIGHT);
+
+  env = new Env(envMap);
+  // bot = new Bot();
+
   botScoreLabel = createElement(
     "p",
     "Bot score:" + botScore + " <br>Best score:" + bestScore
@@ -79,7 +86,7 @@ function draw() {
 
   background(255);
 
-  drawMap();
+  env.render();
   drawBot();
   drawBotMem();
   drawProbMatrix();
@@ -87,25 +94,33 @@ function draw() {
   fill(0);
 }
 
-function drawMap() {
-  noStroke();
+class Env {
+  constructor(env) {
+    this.envMap = env;
+  }
 
-  for (let cols = 0; cols < env.length; cols++) {
-    for (let rows = 0; rows < env[0].length; rows++) {
-      if (env[cols][rows] === 22) {
-        fill(0);
+  update() {}
 
-        rect(MAPXOFFSET + rows * 32, MAPYOFFSET + cols * 32, 32, 32);
-      }
-      if (env[cols][rows] === 0) {
-        fill(255, 0, 0);
+  render() {
+    noStroke();
 
-        rect(MAPXOFFSET + rows * 32, MAPYOFFSET + cols * 32, 32, 32);
-      }
-      if (env[cols][rows] === 99) {
-        fill(0, 255, 0);
+    for (let cols = 0; cols < this.envMap.length; cols++) {
+      for (let rows = 0; rows < this.envMap[0].length; rows++) {
+        if (this.envMap[cols][rows] === 22) {
+          fill(0);
 
-        rect(MAPXOFFSET + rows * 32, MAPYOFFSET + cols * 32, 32, 32);
+          rect(MAPXOFFSET + rows * 32, MAPYOFFSET + cols * 32, 32, 32);
+        }
+        if (this.envMap[cols][rows] === 0) {
+          fill(255, 0, 0);
+
+          rect(MAPXOFFSET + rows * 32, MAPYOFFSET + cols * 32, 32, 32);
+        }
+        if (this.envMap[cols][rows] === 99) {
+          fill(0, 255, 0);
+
+          rect(MAPXOFFSET + rows * 32, MAPYOFFSET + cols * 32, 32, 32);
+        }
       }
     }
   }
@@ -188,8 +203,8 @@ function updateBotMem(x, y) {
 }
 
 function checkIfHitWall(botPosX, botPosY) {
-  if (typeof env !== "undefined") {
-    if (env[botPosY][botPosX] === 22) {
+  if (typeof env.envMap !== "undefined") {
+    if (env.envMap[botPosY][botPosX] === 22) {
       return true;
     }
   } else {
