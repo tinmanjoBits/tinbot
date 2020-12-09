@@ -1,15 +1,17 @@
 /* eslint-disable no-undef, no-unused-vars */
 
 var envMap = [
-  [22, 22, 22, 22, 22, 22, 22],
-  [22, 7, 22, 99, -1, 0, 22],
-  [22, -1, 22, 0, -1, -1, 22],
-  [22, -1, -1, -1, 22, -1, 22],
-  [22, -1, 22, 22, 22, -1, 22],
-  [22, -1, -1, -1, 0, -1, 22],
-  [22, -1, 22, 22, 22, -1, 22],
-  [22, -1, -1, -1, -1, -1, 22],
-  [22, 22, 22, 22, 22, 22, 22]
+  [0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 22, 22, 22, 22, 22, 22, 22, 0],
+  [0, 22, 7, 22, 99, -1, -9, 22, 0],
+  [0, 22, -1, 22, -9, -1, -1, 22, 0],
+  [0, 22, -1, -1, -1, 22, -1, 22, 0],
+  [0, 22, -1, 22, 22, 22, -1, 22, 0],
+  [0, 22, -1, -1, -1, -9, -1, 22, 0],
+  [0, 22, -1, 22, 22, 22, -1, 22, 0],
+  [0, 22, -1, -1, -1, -1, -1, 22, 0],
+  [0, 22, 22, 22, 22, 22, 22, 22, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0]
 ];
 
 const WINWIDTH = 640;
@@ -18,16 +20,21 @@ const WINHEIGHT = 320;
 const MAPXOFFSET = 64;
 const MAPYOFFSET = 32;
 
+const CELLSIZE = 24;
+const MEMCELLSIZE = 16;
+
 var probMatrix = [
-  [0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0]
+  [0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0]
 ];
 
 var botScore = 0;
@@ -82,7 +89,7 @@ function draw() {
 
 function initSim() {
   env = new Env(envMap);
-  tBot = new Bot(1, 1, 10, 9);
+  tBot = new Bot(2, 2, 10, 9);
 }
 
 class Bot {
@@ -98,9 +105,9 @@ class Bot {
 
   resetMemory() {
     let k = [];
-    for (let i = 0; i < 9; i++) {
+    for (let i = 0; i < 11; i++) {
       k[i] = [];
-      for (let j = 0; j < 7; j++) {
+      for (let j = 0; j < 11; j++) {
         k[i][j] = 0;
       }
     }
@@ -205,8 +212,7 @@ class Bot {
       this.ypos = 1;
     }
 
-    probMatrix[this.ypos][this.xpos] = sigmoid(this.currentScore);
-    console.log(this.currentScore, sigmoid(this.currentScore));
+    updateProbMatrix(this.currentScore);
   }
 
   render() {
@@ -214,15 +220,15 @@ class Bot {
     stroke(0);
     fill(255);
 
-    for (let cols = 0; cols < this.mem.length; cols++) {
-      for (let rows = 0; rows < this.mem[0].length; rows++) {
+    for (let cols = 1; cols < this.mem.length - 1; cols++) {
+      for (let rows = 1; rows < this.mem[0].length - 1; rows++) {
         if (this.mem[cols][rows] === -1) {
           fill(0);
         } else {
           fill(255);
         }
 
-        rect(MAPXOFFSET * 5 + rows * 16, MAPYOFFSET + cols * 16, 16, 16);
+        rect(MAPXOFFSET * 4 + rows * 16, MAPYOFFSET + cols * 16, 16, 16);
       }
     }
 
@@ -230,7 +236,12 @@ class Bot {
     noStroke();
     fill(0, 0, 255);
 
-    rect(MAPXOFFSET + this.xpos * 32, MAPYOFFSET + this.ypos * 32, 32, 32);
+    rect(
+      MAPXOFFSET + this.xpos * CELLSIZE,
+      MAPYOFFSET + this.ypos * CELLSIZE,
+      CELLSIZE,
+      CELLSIZE
+    );
   }
 }
 
@@ -249,17 +260,32 @@ class Env {
         if (this.envMap[cols][rows] === 22) {
           fill(0);
 
-          rect(MAPXOFFSET + rows * 32, MAPYOFFSET + cols * 32, 32, 32);
+          rect(
+            MAPXOFFSET + rows * CELLSIZE,
+            MAPYOFFSET + cols * CELLSIZE,
+            CELLSIZE,
+            CELLSIZE
+          );
         }
-        if (this.envMap[cols][rows] === 0) {
+        if (this.envMap[cols][rows] === -9) {
           fill(255, 0, 0);
 
-          rect(MAPXOFFSET + rows * 32, MAPYOFFSET + cols * 32, 32, 32);
+          rect(
+            MAPXOFFSET + rows * CELLSIZE,
+            MAPYOFFSET + cols * CELLSIZE,
+            CELLSIZE,
+            CELLSIZE
+          );
         }
         if (this.envMap[cols][rows] === 99) {
           fill(0, 255, 0);
 
-          rect(MAPXOFFSET + rows * 32, MAPYOFFSET + cols * 32, 32, 32);
+          rect(
+            MAPXOFFSET + rows * CELLSIZE,
+            MAPYOFFSET + cols * CELLSIZE,
+            CELLSIZE,
+            CELLSIZE
+          );
         }
       }
     }
@@ -285,6 +311,21 @@ function drawProbMatrix() {
       rect(MAPXOFFSET * 7 + rows * 16, MAPYOFFSET + cols * 16, 16, 16);
     }
   }
+}
+
+function updateProbMatrix(currentScore) {
+  for (let cols = 0; cols < probMatrix.length; cols++) {
+    for (let rows = -1; rows < probMatrix[0].length + 1; rows++) {
+      probMatrix[cols][rows] =
+        probMatrix[cols - 1][rows] +
+        probMatrix[cols + 1][rows] +
+        probMatrix[cols][rows - 1] +
+        probMatrix[cols][rows + 1];
+    }
+  }
+
+  probMatrix[this.ypos][this.xpos] = sigmoid(this.currentScore);
+  console.log(this.currentScore, sigmoid(this.currentScore));
 }
 
 function keyPressed() {
